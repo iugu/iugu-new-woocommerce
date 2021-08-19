@@ -16,6 +16,12 @@
        */
 		  Iugu.setAccountID(iugu_wc_credit_card_params.account_id);
 
+      if ('yes' === iugu_wc_credit_card_params.is_sandbox) {
+
+        Iugu.setTestMode(true);
+
+      } // end if;
+
       const card_number = $('#iugu-card-number').val().replace(/ /g,'');
 
       const card_name = $('#iugu-card-holder-name').val().split(' ', 2);
@@ -27,7 +33,7 @@
       const card_object = Iugu.CreditCard(
         card_number,
         card_expiry.substring(0, 2),
-        card_expiry.substring(5),
+        card_expiry.substring(3),
         card_name[0],
         card_name[1],
         card_cvv
@@ -41,19 +47,17 @@
 
         } else {
 
-          let params = {
-            iugu_card_token: response.id,
-          };
-
           $.ajax({
             type: 'POST',
             url: iugu_wc_credit_card_params.ajaxurl,
-            data: params,
+            data: {
+              iugu_card_token: response.id
+            },
             dataType: 'json',
             processData: true,
             success: function (response) {
 
-              console.log(response);
+              location.href = iugu_wc_credit_card_params.redirect;
 
             }
 

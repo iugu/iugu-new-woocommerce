@@ -44,7 +44,6 @@ class WC_Iugu_Credit_Card_Gateway extends WC_Payment_Gateway {
 			'pre-orders',
 			'tokenization',
 			'add_payment_method',
-
 		);
 
 		// Load the form fields.
@@ -97,6 +96,8 @@ class WC_Iugu_Credit_Card_Gateway extends WC_Payment_Gateway {
 		add_action('wp_enqueue_scripts', array($this, 'frontend_scripts' ), 9999);
 
 		add_action('woocommerce_api_iugu_add_new_payment_method', array($this, 'add_new_payment_method'));
+
+    add_action('woocommerce_payment_token_deleted', array($this, 'remove_payment_method'), 10, 2);
 
 		if (is_admin()) {
 
@@ -305,7 +306,7 @@ class WC_Iugu_Credit_Card_Gateway extends WC_Payment_Gateway {
 				'free_interest'        => $this->api->get_max_installments_without_interest(),
 				'transaction_rate'     => $this->api->get_transaction_rate(),
 				'rates'                => $this->api->get_interest_rate(),
-				'payment_methods'      => $this->api->get_payment_methods(get_user_meta( get_current_user_id(), '_iugu_customer_id', true )),
+				'payment_methods'      => $this->api->get_payment_methods(get_user_meta(get_current_user_id(), '_iugu_customer_id',true)),
 				'default_method'       => $this->api->get_customer_payment_method_id()
 			);
 
@@ -323,10 +324,13 @@ class WC_Iugu_Credit_Card_Gateway extends WC_Payment_Gateway {
 				'iugu-credit-card-my-account',
 				'iugu_wc_credit_card_params',
 				array(
-					'ajaxurl'    => get_site_url() . '/wc-api/iugu_add_new_payment_method',
-					'account_id' => $this->account_id,
-					'is_sandbox' => $this->sandbox,
-					'masks'      => array(
+					'ajaxurl'         => get_site_url() . '/wc-api/iugu_add_new_payment_method',
+          'redirect'        => get_site_url() . '/my-account/payment-methods/',
+					'account_id'      => $this->account_id,
+					'is_sandbox'      => $this->sandbox,
+					'payment_methods' => $this->api->get_payment_methods(get_user_meta( get_current_user_id(), '_iugu_customer_id', true )),
+					'default_method'  => $this->api->get_customer_payment_method_id(),
+					'masks'           => array(
 						'iugu-card-number' => '0000 0000 0000 0000',
 						'iugu-card-expiry' => '00/0000',
 						'iugu-card-cvc'    => '0000'
@@ -351,19 +355,20 @@ class WC_Iugu_Credit_Card_Gateway extends WC_Payment_Gateway {
 	 * @param  int $order_id Order ID.
 	 * @return array         Redirect.
 	 */
-	public function process_payment( $order_id ) {
+	public function process_payment($order_id) {
 
 		$order = wc_get_order( $order_id );
 
 		/**
 		 * Tratamento do salvamento do cartão.
 		 */
-		if(isset( $_POST['iugu_token']) && isset( $_POST['iugu_save_card']) && $_POST['iugu_save_card'] == 'on') {
+		if(isset($_POST['iugu_token']) && isset( $_POST['iugu_save_card']) && $_POST['iugu_save_card'] == 'on') {
 
 		/**
 		 * Temos token, e o usuário quer salvar o cartão. Então vamos salvar e colocar seu ID em $_POST, e remover o token, pois ele não pode ser reutilizado.
 		 */
 			$_POST['customer_payment_method_id'] = $this->api->create_customer_payment_method($order, $_POST['iugu_token']);
+
 			unset($_POST['iugu_token']);
 
 		} // end if;
@@ -371,15 +376,7 @@ class WC_Iugu_Credit_Card_Gateway extends WC_Payment_Gateway {
 		/**
 		 * Processamento do pagamento.
 		 */
-		if (isset($_POST['iugu_token'])) {
-
-			if(isset($_POST['customer_payment_method_id'])) {
-
-				unset($_POST['customer_payment_method_id']);
-
-			} // end if;
-
-		} else if (!isset($_POST['customer_payment_method_id'])) {
+		if (!isset($_POST['customer_payment_method_id']) && !isset($_POST['iugu_token'])) {
 
 			if ( 'yes' === $this->debug ) {
 
@@ -535,13 +532,13 @@ class WC_Iugu_Credit_Card_Gateway extends WC_Payment_Gateway {
 
 		$user_id = get_current_user_id();
 
-		$customer_id = get_user_meta($user_id, '_iugu_customer_id');
+		$customer_id = get_user_meta($user_id, '_iugu_customer_id', true);
 
-		if ($customer_id) {
+		if ($customer_id && isset($_POST['iugu_card_token'])) {
 
 			$response = $this->api->create_customer_payment_method('', $_POST['iugu_card_token'], $customer_id);
 
-			if ($response['errors']) {
+			if (isset($response['errors']) && $response['errors']) {
 
 				wp_send_json_error(array(
 					'error' => __('Unable to add this credit card. Please, try again.', 'iugu-woocommerce')
@@ -553,9 +550,9 @@ class WC_Iugu_Credit_Card_Gateway extends WC_Payment_Gateway {
 
 		} else {
 
-			wp_send_json_error(array(
-				'error' => __('You need to have at least one subscription active to add payment methods.', 'iugu-woocommerce')
-			));
+      wc_add_notice(__('Card information not valid.', 'iugu-woocommerce'), 'error');
+
+      wp_send_json(array(''));
 
 		} // end if;
 

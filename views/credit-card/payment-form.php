@@ -27,7 +27,7 @@ if (!defined( 'ABSPATH')) {
 
 				foreach($payment_methods as $payment_method) :
 
-					echo '<option value="' . $payment_method['id'] . '" ' .($payment_method['id'] == $default_method ? 'selected' : '') . '>' .	$payment_method['data']['brand'] . ' ' . $payment_method['data']['display_number'] . '</option>';
+					echo '<option value="' . $payment_method->get_id() . '" ' .($payment_method->get_id() == $default_method ? 'selected' : '') . '>' .	$payment_method->get_card_type() . ' ' . $payment_method->get_last4() . '</option>';
 
 				endforeach;
 
@@ -41,7 +41,7 @@ if (!defined( 'ABSPATH')) {
 
 <?php endif; ?>
 
-	<div id="new-credit-card" <?php echo count($payment_methods) > 0 ? 'style="display:none;"' : ''; ?>>
+	<div id="new-credit-card" <?php if (isset($payment_methods) && $payment_methods) { echo 'style="display:none;"'; } else { echo ''; }?>>
 
 		<p class="form-row form-row-first">
 			<label for="iugu-card-number"><?php _e( 'Card number', 'iugu-woocommerce' ); ?> <span class="required">*</span></label>

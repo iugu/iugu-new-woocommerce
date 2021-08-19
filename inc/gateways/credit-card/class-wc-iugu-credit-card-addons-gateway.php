@@ -92,17 +92,7 @@ class WC_Iugu_Credit_Card_Addons_Gateway extends WC_Iugu_Credit_Card_Gateway {
 			/**
 			 * Processamento do pagamento.
 			 */
-			if (isset( $_POST['iugu_token'])) {
-				/**
-				 * Temos iugu token, então o pagamento será feito com um novo cartão. Devemos remover "customer_payment_method_id" do POST, se existir.
-				 */
-				if(isset($_POST['customer_payment_method_id'])) {
-
-					unset($_POST['customer_payment_method_id']);
-
-				} // end if;
-
-			} else if (!isset($_POST['customer_payment_method_id'])) {
+			if (!isset($_POST['customer_payment_method_id'])) {
 				/**
 				 * Não temos nem iugu_token e nem customer_payment_method_id, não há como concluir o pagamento.
 				 */
@@ -210,6 +200,8 @@ class WC_Iugu_Credit_Card_Addons_Gateway extends WC_Iugu_Credit_Card_Gateway {
 			} // end if;
 
 			$create_subscription = $this->api->create_subscription($order, $plan, $customer_id);
+
+			error_log(print_r($create_subscription, TRUE));
 
 			if (!isset($create_subscription['errors'])) {
 
@@ -517,18 +509,6 @@ class WC_Iugu_Credit_Card_Addons_Gateway extends WC_Iugu_Credit_Card_Gateway {
 
 		if (!$payment_method_id) {
 
-			$payment_method_id = $this->api->get_customer_payment_method_id();
-
-			if (!empty( $payment_method_id)) {
-
-				update_post_meta($order->get_id(), '_iugu_customer_payment_method_id', $payment_method_id);
-
-			} // end if;
-
-		} // end if;
-
-		if (!$payment_method_id) {
-
 			if ( 'yes' == $this->debug ) {
 
 				$this->log->add($this->id, 'Missing customer payment method ID in subscription payment for order ' . $order->get_order_number());
@@ -764,62 +744,7 @@ class WC_Iugu_Credit_Card_Addons_Gateway extends WC_Iugu_Credit_Card_Gateway {
 	 */
 	public function payment_fields() {
 
-		$contains_subscription = false;
-
-		if (defined('WC_VERSION') && version_compare(WC_VERSION, '2.1', '>=')) {
-
-			$order_id = absint(get_query_var('order-pay'));
-
-		} else {
-
-			$order_id = isset($_GET['order_id']) ? absint($_GET['order_id']) : 0;
-
-		} // end if;
-
-		/**
-		 * Check from "pay for order" page.
-		 */
-		if ( 0 < $order_id ) {
-
-			$contains_subscription = $this->api->order_contains_subscription($order_id);
-
-		} elseif (class_exists('WC_Subscriptions_Cart')) {
-
-			$contains_subscription = WC_Subscriptions_Cart::cart_contains_subscription();
-
-		} // end if;
-
-		if ($contains_subscription) {
-
-			wp_enqueue_script('wc-credit-card-form');
-
-			if ($description = $this->get_description()) {
-
-				echo wpautop(wptexturize($description));
-
-			} // end if;
-
-			wc_get_template(
-				'credit-card/payment-form.php',
-				array(
-					'order_total'          => 0,
-					'installments'         => 0,
-					'smallest_installment' => 0,
-					'free_interest'        => 0,
-					'transaction_rate'     => 0,
-					'rates'                => array(),
-					'payment_methods'      => $this->api->get_payment_methods(get_user_meta( get_current_user_id(), '_iugu_customer_id', true )),
-					'default_method'       => $this->api->get_customer_payment_method_id()
-				),
-				'woocommerce/iugu/',
-				WC_Iugu::get_templates_path()
-			);
-
-		} else {
-
-			parent::payment_fields();
-
-		} // end if;
+		parent::payment_fields();
 
 	} // end payment_fields;
 

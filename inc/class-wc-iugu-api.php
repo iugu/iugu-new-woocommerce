@@ -452,7 +452,7 @@ class WC_Iugu_API {
 	 * @param int $plan_id
 	 * @return json with the request response
 	 */
-	public function get_subscription($iugu_subscription_id) {
+	public function get_iugu_subscription($iugu_subscription_id) {
 
 		$endpoint = 'subscriptions/' . $iugu_subscription_id . '/';
 
@@ -484,7 +484,7 @@ class WC_Iugu_API {
 
 		} // end if;
 
-	} // end get_subscription;
+	} // end get_iugu_subscription;
 
 	/**
 	 * POST to change subscription status to 'suspend'.
@@ -546,7 +546,7 @@ class WC_Iugu_API {
 	 * @param int $subscription_id Iugu Subscription ID.
 	 * @return json API Request response body.
 	 */
-	public function delete_subscription($iugu_subscription_id) {
+	public function delete_iugu_subscription($iugu_subscription_id) {
 
 		$endpoint = 'subscriptions/' . $iugu_subscription_id;
 
@@ -561,6 +561,33 @@ class WC_Iugu_API {
 		} // end if;
 
 		return $body;
+
+	} // end delete_iugu_subscription;
+
+	/**
+	 * DELETE a payment method subscription.
+	 *
+	 * @since 2.20
+	 *
+	 * @param int $customer_id The Customer ID.
+	 * @param int $payment_id  The Payment method ID.
+	 * @return mixed.
+	 */
+	public function delete_customer_payment_method($customer_id, $payment_id) {
+
+		$endpoint = 'customers/' . $customer_id . '/payment_methods/' . $payment_id;
+
+		$iugu_options = get_option('woocommerce_iugu-bank-slip_settings');
+
+		if (is_array($iugu_options) && isset($iugu_options['api_token'])) {
+
+			$response = $this->do_request($endpoint, 'DELETE', array(), array(), $iugu_options['api_token']);
+
+			$body = json_decode($response['body'], true);
+
+			return $body;
+
+		} // end if;
 
 	} // end delete_subscription;
 
@@ -763,7 +790,7 @@ class WC_Iugu_API {
 	/**
 	 * Get the invoice data.
 	 *
-	 * @param  WC_Order $order WooCommerce Order.
+	 * @param  object|WC_Order $order WooCommerce Order.
 	 * @return array Invoice data organized.
 	 */
 	protected function get_invoice_data($order) {
@@ -942,9 +969,12 @@ class WC_Iugu_API {
 
 			/**
 			 * Discount.
+			 *
 			 */
 			if (defined('WC_VERSION') && version_compare(WC_VERSION, '2.3', '<')) {
-
+				/**
+				 * @param object|WC_Order $order
+				 */
 				if (0 < $order->get_order_discount()) {
 
 					$data['discount_cents'] = $this->get_cents($order->get_order_discount());
@@ -962,6 +992,46 @@ class WC_Iugu_API {
 		return $data;
 
 	} // end get_invoice_data;
+
+	/**
+	 * Get Invoice by invoice_id
+	 *
+	 * @param string $invoice_id
+	 * @return mixed
+	 */
+	public function get_invoice_by_id($invoice_id) {
+
+		$endpoint = 'invoices/' . $invoice_id . '/';
+
+		$response = $this->do_request($endpoint, 'GET');
+
+		if (is_object($response) && is_wp_error($response)) {
+
+			if ($this->gateway->debug == 'yes') {
+
+				$this->gateway->log->add( $this->gateway->id, 'WP_Error while trying to get the subscription: ' . $response->get_error_message());
+
+			} // end if
+
+			return array(
+				'errors' => $response->get_error_message()
+			);
+
+		} elseif (200 == $response['response']['code'] && 'OK' == $response['response']['message']) {
+
+			$body = json_decode($response['body'], true);
+
+			if ($this->gateway->debug === 'yes') {
+
+				$this->gateway->log->add($this->gateway->id, $body);
+
+			} // end if;
+
+			return $body;
+
+		} // end if;
+
+	} // end get_invoice_by_id;
 
 	/**
 	 * Create an invoice.
@@ -1120,7 +1190,9 @@ class WC_Iugu_API {
 			 */
 			if (isset($posted['customer_payment_method_id'])) {
 
-				$data['customer_payment_method_id'] = $posted['customer_payment_method_id'];
+				$customer_payment_method_id = WC_Payment_Tokens::get($posted['customer_payment_method_id']);
+
+				$data['customer_payment_method_id'] = $customer_payment_method_id->get_token();
 
 			} // end if;
 
@@ -1255,7 +1327,7 @@ class WC_Iugu_API {
 
 		} // end if;
 
-		if ( 'credit-card' == $this->method ) {
+		if ('credit-card' == $this->method) {
 
 			$payable_with = 'credit_card';
 
@@ -1265,8 +1337,18 @@ class WC_Iugu_API {
 
 		} // end if;
 
+		if ('pix' == $this->method ) {
+
+			$payable_with = 'pix';
+
+			$expires_at = date('d-m-Y', current_time('timestamp', 1));
+
+			$only_on_charge_success = false;
+
+		} // end if;
+
 		$create_subscription = array(
-			"plan_identifier"        => $plan['identifier'],
+ 			"plan_identifier"        => $plan['identifier'],
 			"customer_id"            => $customer_id,
 			"expires_at"             => $expires_at,
 			"only_on_charge_success" => $only_on_charge_success,
@@ -1287,31 +1369,21 @@ class WC_Iugu_API {
 		 */
 		$response = $this->do_request('subscriptions', 'POST', $subscription_data);
 
-		if (is_object($response) && is_wp_error($response)) {
+		$body = json_decode($response['body'], true);
 
-			if ($this->gateway->debug == 'yes') {
+		if ('yes' == $this->gateway->debug && isset($payment_method['id'])) {
 
-				$this->gateway->log->add( $this->gateway->id, 'WP_Error while trying to get the subscription: ' . $response->get_error_message());
-
-			} // end if
-
-			return array(
-				'errors' => $response->get_error_message()
-			);
-
-		} elseif (200 == $response['response']['code'] && 'OK' == $response['response']['message']) {
-
-			$body = json_decode($response['body'], true);
-
-			if ($this->gateway->debug === 'yes') {
-
-				$this->gateway->log->add($this->gateway->id, $body);
-
-			} // end if;
-
-			return $body;
+			$this->gateway->log->add($this->gateway->id, 'Customer payment method created successfully!');
 
 		} // end if;
+
+		if (isset($body['errors']) && $body['errors']) {
+
+			wc_add_notice(__('Payment method was not added. Please, try again!', 'iugu-woocommerce'), 'error' );
+
+		} // end if;
+
+		return $body;
 
 	} // end create_subscription;
 
@@ -1320,7 +1392,7 @@ class WC_Iugu_API {
 	 *
 	 * @since 2.20
 	 *
-	 * @param WC_Order $order WooCommerce Order.
+	 * @param object|WC_Order $order WooCommerce Order.
 	 * @param array $create_subscription Iugu subscription data.
 	 * @return array Subscription data.
 	 */
@@ -1334,7 +1406,7 @@ class WC_Iugu_API {
 
 				$item = array(
 					"description" => $item_values->get_name(),
-					"price_cents" => $item_values->get_price(),
+					"price_cents" => $this->get_cents($item_values->get_price()),
 					"quantity"    => $item_values->get_quantity(),
 					"recurrent"   => "false"
 				);
@@ -1509,7 +1581,7 @@ class WC_Iugu_API {
 		/**
 		 * Create customer in iugu.
 		 */
-		$customer_id = $this->create_customer( $order );
+		$customer_id = $this->create_customer($order);
 
 		/**
 		 * Save the customer ID.
@@ -1574,15 +1646,7 @@ class WC_Iugu_API {
 
 		$response = $this->do_request('customers/' . $customer_id . '/payment_methods', 'POST', $payment_data);
 
-		if (is_object($response) && is_wp_error($response)) {
-
-			if ('yes' == $this->gateway->debug) {
-
-				$this->gateway->log->add($this->gateway->id, 'WP_Error while trying create a customer payment method: ' . $response->get_error_message());
-
-			} // end if;
-
-		} elseif (isset($response['body']) && !empty($response['body'])) {
+		if (isset($response['body']) && !empty($response['body'])) {
 
 			$body = json_decode($response['body'], true);
 
@@ -1592,23 +1656,17 @@ class WC_Iugu_API {
 
 			} // end if;
 
-			$token = new WC_Payment_Token_CC();
+			if (isset($body['errors']) && $body['errors']) {
 
-			$token->set_token($body['id']);
+				wc_add_notice(__('Payment method was not added. Please, try again!', 'iugu-woocommerce'), 'error' );
 
-			$token->set_gateway_id($this->gateway->id);
+				return $body;
 
-			$token->set_card_type($body['data']['brand']);
+			} // end if;
 
-			$token->set_last4(str_replace('XXXX-XXXX-XXXX-', '', $body['data']['display_number']));
+			wc_add_notice(__('Payment method add successfully', 'iugu-woocommerce'), 'success' );
 
-			$token->set_expiry_month($body['data']['month']);
-
-			$token->set_expiry_year($body['data']['year']);
-
-			$token->set_user_id(get_current_user_id());
-
-			$saved_token = $token->save();
+			$this->set_wc_payment_method($body);
 
 			return $body['id'];
 
@@ -1625,6 +1683,34 @@ class WC_Iugu_API {
 	} // end create_customer_payment_method;
 
 	/**
+	 * Set the Payment Token in WooCommerce for the current customer.
+	 *
+	 * @param array $token_info
+	 * @return void
+	 */
+	public function set_wc_payment_method($token_info) {
+
+		$token = new WC_Payment_Token_CC();
+
+		$token->set_token($token_info['id']);
+
+		$token->set_gateway_id($this->gateway->id);
+
+		$token->set_card_type($token_info['data']['brand']);
+
+		$token->set_last4(str_replace('XXXX-XXXX-XXXX-', '', $token_info['data']['display_number']));
+
+		$token->set_expiry_month($token_info['data']['month']);
+
+		$token->set_expiry_year($token_info['data']['year']);
+
+		$token->set_user_id(get_current_user_id());
+
+		$saved_token = $token->save();
+
+	} // end set_wc_payment_method;
+
+	/**
 	 * Get the customer payment methods.
 	 *
 	 * @param  string $customer_id Iugu Customer ID.
@@ -1632,29 +1718,7 @@ class WC_Iugu_API {
 	*/
 	public function get_payment_methods($customer_id) {
 
-		if (empty($customer_id)) {
-
-			return array();
-
-		} // end if;
-
-		$response = $this->do_request('customers/' . $customer_id . '/payment_methods', 'GET');
-
-		if (is_object($response) && is_wp_error($response)) {
-
-			if ('yes' == $this->gateway->debug) {
-
-				$this->gateway->log->add($this->gateway->id, 'WP_Error while trying to get payment methods: ' . $response->get_error_message());
-
-			} // end if;
-
-		} elseif (isset($response['body']) && !empty($response['body'])) {
-
-			$payment_methods = json_decode($response['body'], true);
-
-			return $payment_methods;
-
-		} // end if;
+		return WC_Payment_Tokens::get_customer_tokens(get_current_user_id());
 
 	} // end get_payment_methods;
 
@@ -1820,7 +1884,11 @@ class WC_Iugu_API {
 	} // end delete_iugu_plan;
 
 	/**
-	 * @return array
+	 * Process Iugu payment.
+	 *
+	 * @param int $order_id The WC Order ID
+	 * @param string $customer_payment_id The customer payment method id, If has one
+	 * @return void
 	 */
 	public function process_payment($order_id) {
 
