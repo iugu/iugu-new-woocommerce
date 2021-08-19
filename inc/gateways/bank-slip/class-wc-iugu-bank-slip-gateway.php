@@ -88,8 +88,6 @@ class WC_Iugu_Bank_Slip_Gateway extends WC_Payment_Gateway {
 
 			add_filter('woocommerce_gateway_title', array($this, 'discount_payment_method_title' ), 10, 2);
 
-			add_action('woocommerce_cart_calculate_fees', array($this, 'add_discount'), 10, 1);
-
 		} // end if;
 
 	} // end __construct;
@@ -360,13 +358,21 @@ class WC_Iugu_Bank_Slip_Gateway extends WC_Payment_Gateway {
 	 * @param string  $subtotal Order total.
 	 * @return string Discount value.
 	 */
-	protected function calculate_discount($type, $value, $subtotal) {
+	protected function calculate_discount($type, $discount_value, $subtotal) {
+
+		$subtotal = $subtotal;
 
 		if ($type == 'percentage') {
 
-			$value = ($subtotal / 100) * ($value);
+			$value = $subtotal - ($subtotal / 100) * ($discount_value);
 
-		};
+		} else {
+
+			$discount_value = $discount_value;
+
+			$value = $subtotal - $discount_value;
+
+		} // end if;
 
 		return $value;
 
@@ -438,9 +444,10 @@ class WC_Iugu_Bank_Slip_Gateway extends WC_Payment_Gateway {
 	 * Undocumented function
 	 *
 	 * @param WC_Cart $cart
+	 * @param mixed $total
 	 * @return void
 	 */
-	public function add_discount($cart) {
+	public function add_discount($cart, $total) {
 
 		if (is_admin() && !defined('DOING_AJAX') || is_cart()) {
 
@@ -450,17 +457,11 @@ class WC_Iugu_Bank_Slip_Gateway extends WC_Payment_Gateway {
 
 		if (WC()->session->chosen_payment_method === $this->id) {
 
-			if (0 < $this->discount_value) {
+			if ($this->discount_value > 0) {
 
-				$payment_gateways = WC()->payment_gateways->payment_gateways();
+				$total_with_discount = $this->calculate_discount($this->discount_type, $this->discount_value, $total);
 
-				$gateway = $payment_gateways[WC()->session->chosen_payment_method];
-
-				$discount_name = $this->discount_name($this->discount_value, $gateway);
-
-				$cart_discount = $this->calculate_discount($this->discount_type, $this->discount_value, $cart->cart_contents_total);
-
-				$cart->add_fee($discount_name, $cart_discount, false);
+				return $total_with_discount;
 
 			} // end if;
 

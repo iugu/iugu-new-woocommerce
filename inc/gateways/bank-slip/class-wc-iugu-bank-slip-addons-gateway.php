@@ -1,7 +1,9 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
+
 	exit;
-}
+
+} // end if;
 
 /**
  * iugu Payment Bank Slip Addons Gateway class.
@@ -19,18 +21,24 @@ class WC_Iugu_Bank_Slip_Addons_Gateway extends WC_Iugu_Bank_Slip_Gateway {
 	 * Constructor.
 	 */
 	public function __construct() {
+
 		parent::__construct();
 
-		if ( class_exists( 'WC_Subscriptions_Order' ) ) {
+		if ( class_exists('WC_Subscriptions_Order')) {
+
 			add_action( 'woocommerce_scheduled_subscription_payment_' . $this->id, array( $this, 'scheduled_subscription_payment' ), 10, 2 );
-		}
+
+		} // end if;
 
 		if ( class_exists( 'WC_Pre_Orders_Order' ) ) {
-			add_action( 'wc_pre_orders_process_pre_order_completion_payment_' . $this->id, array( $this, 'process_pre_order_release_payment' ) );
-		}
 
-		add_action( 'woocommerce_api_wc_iugu_bank_slip_addons_gateway', array( $this->api, 'notification_handler' ) );
-	}
+			add_action('wc_pre_orders_process_pre_order_completion_payment_' . $this->id, array($this, 'process_pre_order_release_payment'));
+
+		} // end if;
+
+		add_action('woocommerce_api_wc_iugu_bank_slip_addons_gateway', array( $this->api, 'notification_handler'));
+
+	} // end __construct;
 
 	/**
 	 * Process the subscription.

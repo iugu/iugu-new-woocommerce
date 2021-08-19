@@ -25,7 +25,7 @@ if (!defined('ABSPATH')){
 
 			<div class="iugu-pix-qrcode-div">
 
-				<div id='iugu_pix_qrcode' class="iugu-pix-qrcode" data-qrcode-url="<?php echo esc_url($qrcode); ?>"></div>
+				<img class="iugu-pix-qrcode" src="<?php echo esc_url($qrcode); ?>">
 
 			</div>
 

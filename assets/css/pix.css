@@ -1,5 +1,7 @@
 .iugu-pix-qrcode-div{
+  position: relative;
   padding: 20px;
+  text-align: center;
 }
 
 .iugu-pix-qrcode img {

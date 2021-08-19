@@ -61,7 +61,13 @@ class WC_Iugu_Hooks {
 
     add_action('woocommerce_product_options_general_product_data', array($this, 'product_iugu_payment_options'), 10);
 
+		add_filter('woocommerce_available_payment_gateways', array($this, 'filter_gateways_based_on_product'), 10);
+
     add_action('save_post', array($this, 'saves_product_iugu_payment_options'), 40);
+
+		add_action('woocommerce_payment_token_deleted', array($this, 'remove_payment_method'), 10, 2);
+
+		add_action('woocommerce_cart_calculate_fees', array($this, 'add_amount_to_order'), 10, 1);
 
 	} // end __construct;
 
@@ -287,15 +293,15 @@ class WC_Iugu_Hooks {
 		woocommerce_wp_select( array(
 			'id'          => '_iugu_payable_with',
 			'class'       => 'wc_input_subscription_length select short',
-			'label'       => __( 'Avaiable Iugu Payments', 'iugu-woocommerce' ),
+			'label'       => __('Avaiable Iugu Payments', 'iugu-woocommerce'),
 			'options'     => array(
-				'all'			    => __('All', 'iugu-woocommerce'),
-				'bank_slip'		=> __('Bank Slip', 'iugu-woocommerce'),
-				'credit_card'	=> __('Credit Card', 'iugu-woocommerce'),
-        'pix'         => __('PIX', 'iugu-woocommerce')
+				'all'			          => __('All', 'iugu-woocommerce'),
+				'iugu-bank-slip'		=> __('Bank Slip', 'iugu-woocommerce'),
+				'iugu-credit-card'	=> __('Credit Card', 'iugu-woocommerce'),
+        'iugu-pix'          => __('PIX', 'iugu-woocommerce')
 			),
 			'desc_tip'    => true,
-			'description' => __( '', 'iugu-woocommerce' ),
+			'description' => '',
 			)
 		);
 
@@ -374,5 +380,102 @@ class WC_Iugu_Hooks {
     } // end if;
 
   } // end output_iugu_plan_id_meta_box;
+
+	/**
+	 * Deletes a payment method when the user clicks in the Delete button.
+	 *
+	 * @param string $token_id The token ID.
+	 * @param object $token    The Token object.
+	 * @return void
+	 */
+  public function remove_payment_method($token_id,  $token) {
+
+   	$customer_id = get_user_meta(get_current_user_id(), '_iugu_customer_id',true);
+
+		$this->api->delete_customer_payment_method($customer_id, $token->get_token());
+
+  } // end remove_payment_method;
+
+	/**
+	 * Filter gateways based on the payable with option.
+	 *
+	 * @param array $gateways
+	 * @return array.
+	 */
+	public function filter_gateways_based_on_product($gateways) {
+
+		if (WC()->cart) {
+
+			$filtered_gateways = array();
+
+			foreach (WC()->cart->get_cart() as $cart_item) {
+
+				$product_id = $cart_item['data']->get_id();
+
+				$filtered_gateways[get_post_meta($product_id, '_iugu_payable_with', true)] = get_post_meta($product_id, '_iugu_payable_with', true);
+
+			} // end if;
+
+
+			if (isset($filtered_gateways['all'])) {
+
+				return $gateways;
+
+			} // end if;
+
+			foreach ($filtered_gateways as $filter_gateway_key) {
+
+				$filtered_gateways[$filter_gateway_key] = $gateways[$filter_gateway_key];
+
+			} // end foreach;
+
+			return $filtered_gateways;
+
+		} // end if;
+
+		return $gateways;
+
+	} // end filter_gateways_based_on_product;
+
+		/**
+	 * Add metadata amount to an order and set new total order
+	 *
+	 * @param [type] $order_id
+	 * @param [type] $posted
+	 * @return void
+	 */
+	public function add_amount_to_order($cart) {
+
+		if (WC()->session->chosen_payment_method === 'iugu-bank-slip') {
+
+			$iugu_options = get_option('woocommerce_iugu-bank-slip_settings');
+
+			if (isset($iugu_options['enable_discount']) and $iugu_options['enable_discount']) {
+
+				$type = $iugu_options['discount_type'];
+
+				$subtotal = $cart->get_subtotal();
+
+				$discount_value = $iugu_options['discount_value'];
+
+				if ($type == 'percentage') {
+
+					$value = ($subtotal / 100) * ($discount_value);
+
+				} else {
+
+					$discount_value = $discount_value;
+
+					$value = $discount_value;
+
+				} // end if;
+
+			}
+
+			$cart->add_fee(__('Bank Slip discount', 'iugu-woocommerce'), -$value);
+
+		}
+
+	}
 
 } // end WC_Iugu_Hooks;

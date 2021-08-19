@@ -174,6 +174,8 @@ class WC_Iugu {
 
 				include_once 'inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php';
 
+				include_once 'inc/gateways/pix/class-wc-iugu-pix-addons-gateway.php';
+
 			} // end if;
 
 		} // end if;
@@ -202,7 +204,7 @@ class WC_Iugu {
 
 				$methods[] = 'WC_Iugu_Bank_Slip_Addons_Gateway';
 
-				$methods[] = 'WC_Iugu_Pix_Gateway';
+				$methods[] = 'WC_Iugu_Pix_Addons_Gateway';
 
 			} // end if;
 
