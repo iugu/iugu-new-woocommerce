@@ -28,6 +28,27 @@ class WC_Iugu_Bank_Slip_Addons_Gateway extends WC_Iugu_Bank_Slip_Gateway {
 
 			add_action( 'woocommerce_scheduled_subscription_payment_' . $this->id, array( $this, 'scheduled_subscription_payment' ), 10, 2 );
 
+			$maybe_iugu_handle_subscriptions = get_option('enable_iugu_handle_subscriptions');
+
+      if ($maybe_iugu_handle_subscriptions === 'yes') {
+
+        /**
+         * Process subscription on-hold.
+         */
+        add_action('woocommerce_subscription_on-hold_' . $this->id, array($this, 'iugu_subscription_on_hold'), 10);
+
+        /**
+         * Process subscription active.
+         */
+        add_action('woocommerce_subscription_activated_' . $this->id, array($this, 'iugu_subscription_activate'), 10);
+
+        /**
+         * Process subscription cancelled.
+         */
+        add_action('woocommerce_subscription_cancelled_' . $this->id, array($this, 'iugu_subscription_cancelled'), 10);
+
+      } // end if;
+
 		} // end if;
 
 		if ( class_exists( 'WC_Pre_Orders_Order' ) ) {
@@ -39,6 +60,42 @@ class WC_Iugu_Bank_Slip_Addons_Gateway extends WC_Iugu_Bank_Slip_Gateway {
 		add_action('woocommerce_api_wc_iugu_bank_slip_addons_gateway', array( $this->api, 'notification_handler'));
 
 	} // end __construct;
+
+	/**
+	 * Process the payment.
+	 *
+	 * @param  int $order_id WooCommerce order ID.
+	 * @return array
+	 */
+	public function process_payment($order_id) {
+
+		/**
+		 * Processing subscription.
+		 */
+		if ($this->api->order_contains_subscription($order_id)) {
+
+      $maybe_iugu_handle_subscriptions = get_option('enable_iugu_handle_subscriptions');
+
+      if ($maybe_iugu_handle_subscriptions === 'yes') {
+
+				return $this->process_iugu_subscription($order_id);
+
+			} else {
+
+				return $this->process_subscription($order_id);
+
+			} // end if;
+
+		} else {
+
+			/**
+			 * Processing regular product.
+			 */
+			return parent::process_payment($order_id);
+
+		} // end if;
+
+	} // end process_payment;
 
 	/**
 	 * Process the subscription.
@@ -117,27 +174,156 @@ class WC_Iugu_Bank_Slip_Addons_Gateway extends WC_Iugu_Bank_Slip_Gateway {
 		}
 	}
 
-	/**
-	 * Process the payment.
+	  /**
+	 * Process a subscription using Iugu Subscriptions.
 	 *
-	 * @param  int $order_id
+	 * @since 2.20
 	 *
-	 * @return array
+	 * @param string $order_id WooCommerce Order ID.
+	 * @return array with the result and possible error messages
 	 */
-	public function process_payment( $order_id ) {
-		// Processing subscription.
-		if ( $this->api->order_contains_subscription( $order_id ) ) {
-			return $this->process_subscription( $order_id );
+	protected function process_iugu_subscription($order_id) {
 
-		// Processing pre-order.
-		} elseif ( $this->api->order_contains_pre_order( $order_id ) ) {
-			return $this->process_pre_order( $order_id );
+		try {
 
-		// Processing regular product.
+			$order 	= new WC_Order($order_id);
+
+			$customer_id = $this->api->get_customer_id($order);
+
+			/**
+			 * Get the payment method
+			 */
+			if (isset($_POST['iugu_token'])) {
+
+				$payment_method_id = $this->api->create_customer_payment_method($order, $_POST['iugu_token']);
+
+			}	else if (isset($_POST['customer_payment_method_id'])) {
+
+				$payment_method_id = $_POST['customer_payment_method_id'];
+
+			} // end if;
+
+      if (isset($payment_method_id)) {
+
+        $this->api->set_default_payment_method($order, $payment_method_id);
+
+      } // end if;
+
+			$plan_id	= $this->api->get_product_plan_id($order_id);
+
+			if ($plan_id) {
+
+				$plan	= $this->api->get_iugu_plan($plan_id);
+
+			} // end if;
+
+			$create_subscription = $this->api->create_iugu_subscription($order, $plan, $customer_id);
+
+			if (isset($create_subscription['recent_invoices'])) {
+
+        $wcs_subscriptions = wcs_get_subscriptions_for_order($order_id);
+
+        foreach ($wcs_subscriptions as $wcs_subscription_key => $wcs_subscription_value) {
+
+          /**
+           * Save iugu subscription data in the WooCommerce Subscriptions subscription;
+           */
+          update_post_meta($wcs_subscription_key, '_wcs_iugu_subscription_id', $create_subscription['id']);
+
+        } // end foreach;
+
+        $invoice_data = $this->api->get_invoice_by_id($create_subscription['recent_invoices'][0]['id']);
+
+				$payment_data = array_map(
+					'sanitize_text_field',
+					array(
+						'pdf' => $invoice_data['secure_url'] . '.pdf'
+					)
+				);
+
+        /**
+         * Save first invoice data.
+         */
+				update_post_meta($order->get_id(), '_iugu_wc_transaction_data', $payment_data);
+
+        update_post_meta($order->get_id(), '_transaction_id', $invoice_data['id']);
+
+				$payment_response = $this->process_iugu_subscription_payment($order, $create_subscription, $order->get_total());
+
+				if ($payment_response) {
+
+					/**
+					 * Return thank you page redirect
+					 */
+					return array(
+						'result'   => 'success',
+						'redirect' => $this->get_return_url($order)
+					);
+
+				} // end if
+
+			} else {
+
+				throw new Exception($create_subscription['error']);
+
+			} // end if;
+
+		} catch (Exception $e) {
+
+			$this->api->add_error('<strong>' . esc_attr( $this->title ) . '</strong>: ' . $e->getMessage());
+
+			return array(
+				'result'   => 'fail',
+				'redirect' => ''
+			);
+
+		} // end try;
+
+	} // end process_iugu_subscription;
+
+	/**
+	 * Process Iugu Subscription payment.
+	 *
+	 * @since 2.20
+	 *
+	 * @param WC_order $order WooCommerce Order
+   * @param array    $iugu_subscription Iugu subscription array.
+	 * @param int      $amount Subscription Amount
+	 * @return bool|WP_Error
+	 */
+	public function process_iugu_subscription_payment($order, $subscription, $amount = 0) {
+
+		if (0 == $amount) {
+
+			/**
+			 * Payment complete.
+			 */
+			$order->payment_complete();
+
+			return true;
+
+		} // end if;
+
+    /**
+     * Get Iugu Subscription Status.
+     */
+    $iugu_subscription = $this->api->get_iugu_subscription($subscription['id']);
+
+		if ($iugu_subscription['recent_invoices'][0]['status'] === 'paid') {
+
+			$order->add_order_note(__('Subscription paid successfully by Iugu - PIX.', 'iugu-woocommerce'));
+
+			$order->payment_complete();
+
 		} else {
-			return parent::process_payment( $order_id );
-		}
-	}
+
+      $order->add_order_note(__('Iugu Subscription waiting payment.', 'iugu-woocommerce'));
+
+		} // end if;
+
+    return true;
+
+	} // end process_iugu_subscription_payment;
 
 	/**
 	 * Process subscription payment.
@@ -192,19 +378,33 @@ class WC_Iugu_Bank_Slip_Addons_Gateway extends WC_Iugu_Bank_Slip_Gateway {
 		return true;
 	}
 
-	/**
-	 * Scheduled subscription payment.
-	 *
-	 * @param float $amount_to_charge The amount to charge.
-	 * @param WC_Order $renewal_order A WC_Order object created to record the renewal payment.
-	 */
-	public function scheduled_subscription_payment( $amount_to_charge, $renewal_order ) {
-		$result = $this->process_subscription_payment( $renewal_order, $amount_to_charge );
+  /**
+   * Scheduled subscription payment.
+   *
+   * @param float $amount_to_charge The amount to charge.
+   * @param WC_Order $renewal_order A WC_Order object created to record the renewal payment.
+   */
+  public function process_scheduled_subscription_payment($amount_to_charge, $renewal_order) {
 
-		if ( is_wp_error( $result ) ) {
-			$renewal_order->update_status( 'failed', $result->get_error_message() );
-		}
-	}
+    $maybe_iugu_handle_subscriptions = get_option('enable_iugu_handle_subscriptions');
+
+    if ($maybe_iugu_handle_subscriptions === 'yes') {
+
+      $result = $this->process_iugu_subscription_payment($renewal_order, $amount_to_charge);
+
+    } else {
+
+      $result = $this->process_subscription_payment($renewal_order, $amount_to_charge);
+
+      if (is_wp_error($result)) {
+
+        $renewal_order->update_status('failed', $result->get_error_message());
+
+      } // end if;
+
+    }
+
+  } // end scheduled_subscription_payment;
 
 	/**
 	 * Process a pre-order payment when the pre-order is released.
@@ -286,35 +486,74 @@ class WC_Iugu_Bank_Slip_Addons_Gateway extends WC_Iugu_Bank_Slip_Gateway {
 	}
 
 	/**
-	 * Notification handler.
+	 * Handles API notifications.
+	 *
+	 * @return void
 	 */
 	public function notification_handler() {
-		@ob_clean();
 
-		if ( isset( $_REQUEST['event'] ) && isset( $_REQUEST['data']['id'] ) && 'invoice.status_changed' == $_REQUEST['event'] ) {
-			global $wpdb;
+		$this->api->notification_handler();
 
-			header( 'HTTP/1.1 200 OK' );
+	} // end notification_handler;
 
-			$invoice_id = sanitize_text_field( $_REQUEST['data']['id'] );
-			$order_id   = $wpdb->get_var( $wpdb->prepare( "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = '_transaction_id' AND meta_value = '%s'", $invoice_id ) );
-			$order_id   = intval( $order_id );
+	/**
+	 * Activates a iugu subscription.
+	 *
+	 * @since 2.20
+	 *
+	 * @param object $wcs_subscription WooCommerce Subscription object.
+	 * @return void.
+	 */
+	public function iugu_subscription_activate($wcs_subscription) {
 
-			if ( $order_id ) {
-				$invoice_status = $this->api->get_invoice_status( $invoice_id );
+		$iugu_subscription_id = get_post_meta($wcs_subscription->get_id(), '_wcs_iugu_subscription_id', true);
 
-				if ( $invoice_status ) {
-					if ( $this->api->order_contains_subscription( $order_id ) ) {
-						$this->update_subscription_status( $order_id, $invoice_status );
-						exit();
-					} else {
-						$this->api->update_order_status( $order_id, $invoice_status );
-						exit();
-					}
-				}
-			}
-		}
+		if ($iugu_subscription_id){
 
-		wp_die( __( 'The request failed!', 'iugu-woocommerce' ), __( 'The request failed!', 'iugu-woocommerce' ), array( 'response' => 200 ) );
-	}
-}
+			$this->api->unsuspend_iugu_subscription($iugu_subscription_id);
+
+		} // end if;
+
+	} // end iugu_subscription_activate;
+
+  /**
+	 * Set the status of a iugu subscription to 'suspended'
+	 *
+	 * @since 2.20
+	 *
+	 * @param object $wcs_subscription WooCommerce Subscription object.
+	 * @return void.
+	 */
+	public function iugu_subscription_on_hold($wcs_subscription) {
+
+		$iugu_subscription_id = get_post_meta($wcs_subscription->get_id(), '_wcs_iugu_subscription_id', true);
+
+		if ($iugu_subscription_id) {
+
+			$this->api->suspend_iugu_subscription($iugu_subscription_id);
+
+		} // end if;
+
+	} // end iugu_subscription_on_hold;
+
+  /**
+	 * Deletes a iugu subscription
+	 *
+	 * @since 2.20
+	 *
+	 * @param object $wcs_subscription WooCommerce Subscription object.
+	 * @return void.
+	 */
+	public function iugu_subscription_cancelled($wcs_subscription) {
+
+		$iugu_subscription_id = get_post_meta($wcs_subscription->get_id(), '_wcs_iugu_subscription_id');
+
+		if ($iugu_subscription_id) {
+
+			$this->api->delete_iugu_subscription($iugu_subscription_id[0]);
+
+		} // end if;
+
+	} // end iugu_subscription_cancelled;
+
+} // end WC_Iugu_Bank_Slip_Addons_Gateway;

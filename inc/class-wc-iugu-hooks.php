@@ -43,17 +43,30 @@ class WC_Iugu_Hooks {
 
       if ($maybe_iugu_handle_subscriptions === 'yes') {
 
+				add_action('wp_ajax_wc_iugu_notification_handler', array($this, 'webhook_notification_handler'));
+
+				add_action('wp_ajax_nopriv_wc_iugu_notification_handler', array($this, 'webhook_notification_handler'));
+
+				if (!get_option('_wc_iugu_webhook_created')) {
+
+					$this->create_iugu_webhook();
+
+				} // end if;
+
 			/**
 			 * When the product-subscription is created
 			 */
-			add_action('woocommerce_process_product_meta_subscription', array($this,'create_new_iugu_plan'), 99, 1);
+			add_action('woocommerce_process_product_meta_subscription', array($this, 'create_new_iugu_plan'), 99, 1);
+
+			add_action('woocommerce_update_product', array($this, 'create_new_iugu_plan'), 99, 1);
+
 
 			/**
 			 * When the product-subscription is update
 			 */
 			add_action('before_delete_post', array($this, 'delete_iugu_plan'), 10, 1);
 
-      add_action('add_meta_boxes', array($this, 'iugu_plan_id_meta_box'));
+      add_action('add_meta_boxes', array($this, 'iugu_plan_id_meta_box'), 10, 2);
 
       } // end if
 
@@ -67,7 +80,7 @@ class WC_Iugu_Hooks {
 
 		add_action('woocommerce_payment_token_deleted', array($this, 'remove_payment_method'), 10, 2);
 
-		add_action('woocommerce_cart_calculate_fees', array($this, 'add_amount_to_order'), 10, 1);
+		add_action('woocommerce_before_calculate_totals', array($this, 'add_amount_to_order'), 10, 1);
 
 	} // end __construct;
 
@@ -192,44 +205,52 @@ class WC_Iugu_Hooks {
 
 				$product_data = get_post_meta($product_id);
 
-        $_subscription_period = $product_data['_subscription_period'][0];
+				if (isset($product_data)) {
 
-        if ($_subscription_period === 'month') {
+					$_subscription_period = $product_data['_subscription_period'][0];
 
-          $_subscription_period = 'months';
+					if ($_subscription_period === 'month') {
 
-          $_subscription_period_interval = $product_data['_subscription_period_interval'][0];
+						$_subscription_period = 'months';
 
-        } // end if;
+						$_subscription_period_interval = $product_data['_subscription_period_interval'][0];
 
-        if ($_subscription_period === 'year') {
+					} // end if;
 
-          $_subscription_period = 'months';
+					if ($_subscription_period === 'year') {
 
-          $_subscription_period_interval = 12;
+						$_subscription_period = 'months';
 
-        } // end if;
+						$_subscription_period_interval = 12;
 
-        if ($product_data['_sale_price'][0] > 0) {
+					} // end if;
 
-          $subscription_price = $product_data['_sale_price'][0];
+					$sale_price = $product->get_sale_price();
 
-        } else {
+					if ($sale_price) {
 
-          $subscription_price = $product_data['_subscription_price'][0];
+						$subscription_price = $sale_price;
 
-        } // end if;
+					} else {
+
+						$subscription_price = $product->get_price();
+
+					} // end if;
+
+				} // end if;
 
         $plan_params = array(
           "name"          => $product->get_name(),
-          "identifier"    => $product->get_id(),
-          "interval"      => $_subscription_period_interval,
-          "interval_type" => $_subscription_period,
-          "value_cents"   => $subscription_price,
-          "payable_with"  => $product_data['_iugu_payable_with'][0],
+          "interval"      => isset($_subscription_period_interval) ? $_subscription_period : 1,
+          "interval_type" => isset($_subscription_period) ? $_subscription_period : 'months',
+          "value_cents"   => $this->api->get_cents($subscription_price),
+          "payable_with"  => isset($product_data['_iugu_payable_with'][0]) ? $product_data['_iugu_payable_with'][0] : 'all',
+					'billing_days'	=> 5
         );
 
 				if (!isset($product_data['_iugu_plan_id']) || !$product_data['_iugu_plan_id'][0]) {
+
+					$plan_params['identifier'] = trim($product->get_name() . '_' . $product->get_id());
 
 					$response = $this->api->create_iugu_plan($plan_params);
 
@@ -241,7 +262,7 @@ class WC_Iugu_Hooks {
 
 				} else {
 
-          $response = $this->api->create_iugu_plan($plan_params, $product_data['_iugu_plan_id'][0]);
+          $response = $this->api->update_iugu_plan($plan_params, $product_data['_iugu_plan_id'][0]);
 
 				} // end if;
 
@@ -338,9 +359,17 @@ class WC_Iugu_Hooks {
    *
    * @return void
    */
-  public function iugu_plan_id_meta_box() {
+  public function iugu_plan_id_meta_box($post_type, $post) {
 
-    add_meta_box('iugu_plan_id_meta_box', __('Iugu Gateway', 'iugu-woocommerce'), array($this, 'output_iugu_plan_id_meta_box'), 'product', 'side', 'default');
+		$maybe_iugu_handle_subscriptions = get_option('enable_iugu_handle_subscriptions');
+
+		if ($maybe_iugu_handle_subscriptions === 'yes') {
+
+			add_meta_box('iugu_plan_id_meta_box', __('Iugu Gateway', 'iugu-woocommerce'), array($this, 'output_iugu_plan_id_meta_box'), 'product', 'side', 'default');
+
+			add_meta_box('iugu_subscription_meta_box', __('Iugu Gateway', 'iugu-woocommerce'), array($this, 'output_iugu_subscription_meta_box'), 'shop_subscription', 'side', 'default');
+
+		} // end if;
 
   } // end iugu_plan_id_meta_box;
 
@@ -361,7 +390,7 @@ class WC_Iugu_Hooks {
     ?>
       <div class="col-sm-12">
 
-        <h4>ID do Plano</h4>
+			<h4><?php echo __('Plan ID'); ?></h4>
 
         <input type="text" name="_iugu_plan_id_metabox" style="width: 100%;font-size: 12px;color: #333333;" id="_iugu_plan_id_metabox" value="<?php echo $product_meta['_iugu_plan_id'][0]; ?>" disabled>
 
@@ -380,6 +409,43 @@ class WC_Iugu_Hooks {
     } // end if;
 
   } // end output_iugu_plan_id_meta_box;
+
+	/**
+   * Outputs the content of the iugu subscription meta box in the subscription page.
+   *
+   * @since 2.20
+   *
+   * @param WP_Post $post
+   * @return void.
+   */
+  public function output_iugu_subscription_meta_box($post) {
+
+    $product_meta = get_post_meta($post->ID);
+
+    if (isset($product_meta['_wcs_iugu_subscription_id']) && $product_meta['_wcs_iugu_subscription_id'][0]) {
+
+    ?>
+      <div class="col-sm-12">
+
+        <h4><?php echo __('Subscription ID'); ?></h4>
+
+        <input type="text" name="_iugu_subscription_id_metabox" style="width: 100%;font-size: 12px;color: #333333;" id="_iugu_subscription_id_metabox" value="<?php echo $product_meta['_wcs_iugu_subscription_id'][0]; ?>" disabled>
+
+      </div>
+
+    <?php } else { ?>
+
+      <div class="col-sm-12">
+
+        <span><?php _e('No subscription for this product', 'iugu-woocommerce'); ?></span>
+
+      </div>
+
+    <?php
+
+    } // end if;
+
+  } // end output_iugu_subscription_meta_box;
 
 	/**
 	 * Deletes a payment method when the user clicks in the Delete button.
@@ -437,14 +503,14 @@ class WC_Iugu_Hooks {
 
 	} // end filter_gateways_based_on_product;
 
-		/**
+	/**
 	 * Add metadata amount to an order and set new total order
 	 *
-	 * @param [type] $order_id
-	 * @param [type] $posted
+	 * @param object $cart
 	 * @return void
 	 */
 	public function add_amount_to_order($cart) {
+
 
 		if (WC()->session->chosen_payment_method === 'iugu-bank-slip') {
 
@@ -470,12 +536,48 @@ class WC_Iugu_Hooks {
 
 				} // end if;
 
-			}
+			} // end if;
 
-			$cart->add_fee(__('Bank Slip discount', 'iugu-woocommerce'), -$value);
+			if ($value) {
 
-		}
+				$cart->add_fee(__('Bank Slip discount', 'iugu-woocommerce'), -$value);
 
-	}
+			} // end if ;
+
+		} // end if;
+
+	} // end add_amount_to_order;
+
+	/**
+	 * Create iugu webhook for subscriptions that are handled by Iugu.
+	 *
+	 * @return void
+	 */
+	public function create_iugu_webhook() {
+
+		if (!get_option('_wc_iugu_webhook_created')) {
+
+			$webhook = $this->api->create_iugu_webhook();
+
+			if (isset($webhook['id'])) {
+
+				update_option('_wc_iugu_webhook_created', $webhook['id']);
+
+			} // end if;
+
+		} // end if;
+
+	} // end create_iugu_webhook;
+
+	/**
+	 * Handles notifications received via ajax endpoint.
+	 *
+	 * @return void.
+	 */
+	public function webhook_notification_handler() {
+
+		$this->api->notification_handler();
+
+	} // end webhook_notification_handler;
 
 } // end WC_Iugu_Hooks;

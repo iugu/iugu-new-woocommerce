@@ -189,7 +189,7 @@ class WC_Iugu_Credit_Card_Gateway extends WC_Payment_Gateway {
 			'pass_interest' => array(
 				'title'       => __( 'Pass on interest', 'iugu-woocommerce' ),
 				'type'        => 'checkbox',
-				'label'       => __( 'Pass on the installments\' interest to the customer. (Please, be aware that this option currently only applies to iugu accounts created before 2017.)', 'iugu-woocommerce' ),
+				'label'       => __( 'Pass on the installments\' interest to the customer.', 'iugu-woocommerce' ),
 				'description' => __( 'This option is only for display and should mimic your iugu account\'s settings.', 'iugu-woocommerce' ),
 				'desc_tip'    => true,
 				'default'     => 'no'
@@ -303,7 +303,7 @@ class WC_Iugu_Credit_Card_Gateway extends WC_Payment_Gateway {
 				'order_total'          => $order_total,
 				'installments'         => $this->api->get_max_installments(),
 				'smallest_installment' => 5 <= $this->smallest_installment ? $this->smallest_installment : 5,
-				'free_interest'        => $this->api->get_max_installments_without_interest(),
+				'free_interest'        => 'yes' == $this->pass_interest ? intval( $this->free_interest ) : 12,
 				'transaction_rate'     => $this->api->get_transaction_rate(),
 				'rates'                => $this->api->get_interest_rate(),
 				'payment_methods'      => $this->api->get_payment_methods(get_user_meta(get_current_user_id(), '_iugu_customer_id',true)),

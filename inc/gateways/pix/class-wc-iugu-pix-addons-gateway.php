@@ -31,10 +31,26 @@ class WC_Iugu_Pix_Addons_Gateway extends WC_Iugu_Pix_Gateway {
        */
       add_action('woocommerce_scheduled_subscription_payment_' . $this->id, array( $this, 'process_scheduled_subscription_payment' ), 10, 2 );
 
-      /**
-       * Process resubscription
-       */
-      add_action('wcs_resubscribe_order_created', array($this, 'process_resubscribe_order'), 10, 2);
+      $maybe_iugu_handle_subscriptions = get_option('enable_iugu_handle_subscriptions');
+
+      if ($maybe_iugu_handle_subscriptions === 'yes') {
+
+        /**
+         * Process subscription on-hold.
+         */
+        add_action('woocommerce_subscription_on-hold_' . $this->id, array($this, 'iugu_subscription_on_hold'), 10);
+
+        /**
+         * Process subscription active.
+         */
+        add_action('woocommerce_subscription_activated_' . $this->id, array($this, 'iugu_subscription_activate'), 10);
+
+        /**
+         * Process subscription cancelled.
+         */
+        add_action('woocommerce_subscription_cancelled_' . $this->id, array($this, 'iugu_subscription_cancelled'), 10);
+
+      } // end if;
 
     } // end if;
 
@@ -79,44 +95,6 @@ class WC_Iugu_Pix_Addons_Gateway extends WC_Iugu_Pix_Gateway {
 	} // end process_payment;
 
   /**
-   * Process resubscription order.
-   *
-   * @param int $resubscribe_order Resubscription Order ID.
-   * @param int $subscription      WooCommerce Subscription ID
-   * @return void
-   */
-  protected function process_resubscribe_order($resubscribe_order, $subscription) {
-
-    $maybe_iugu_handle_subscriptions = get_option('enable_iugu_handle_subscriptions');
-
-    if ($maybe_iugu_handle_subscriptions === 'yes') {
-
-      $iugu_subscription_id = get_post_meta($subscription, '_wcs_iugu_subscription_data');
-
-      if (isset($iugu_subscription_id['id'])) {
-
-        $iugu_subscription_id = $iugu_subscription_id['id'];
-
-        /**
-         * Get updated iugu subscription info.
-         */
-        $this->api->get_iugu_subscription($iugu_subscription_id);
-
-      }
-
-    } else {
-
-
-
-    }
-
-
-
-
-
-  } // end process_resubscribe_order;
-
-  /**
 	 * Process a subscription using Iugu Subscriptions.
 	 *
 	 * @since 2.20
@@ -128,7 +106,7 @@ class WC_Iugu_Pix_Addons_Gateway extends WC_Iugu_Pix_Gateway {
 
 		try {
 
-			$order 	= new WC_Order( $order_id );
+			$order 	= new WC_Order($order_id);
 
 			$customer_id = $this->api->get_customer_id($order);
 
@@ -145,7 +123,11 @@ class WC_Iugu_Pix_Addons_Gateway extends WC_Iugu_Pix_Gateway {
 
 			} // end if;
 
-			$this->api->set_default_payment_method($order, $payment_method_id);
+      if (isset($payment_method_id)) {
+
+        $this->api->set_default_payment_method($order, $payment_method_id);
+
+      } // end if;
 
 			$plan_id	= $this->api->get_product_plan_id($order_id);
 
@@ -155,18 +137,18 @@ class WC_Iugu_Pix_Addons_Gateway extends WC_Iugu_Pix_Gateway {
 
 			} // end if;
 
-			$create_subscription = $this->api->create_subscription($order, $plan, $customer_id);
+			$create_subscription = $this->api->create_iugu_subscription($order, $plan, $customer_id);
 
 			if (isset($create_subscription['recent_invoices'])) {
 
         $wcs_subscriptions = wcs_get_subscriptions_for_order($order_id);
 
-        foreach ($wcs_subscriptions as $wcs_subscription_key => $wcs_subscription_key) {
+        foreach ($wcs_subscriptions as $wcs_subscription_key => $wcs_subscription_value) {
 
           /**
            * Save iugu subscription data in the WooCommerce Subscriptions subscription;
            */
-          update_post_meta($order->get_id(), '_wcs_iugu_subscription_data', $create_subscription);
+          update_post_meta($wcs_subscription_key, '_wcs_iugu_subscription_id', $create_subscription['id']);
 
         } // end foreach;
 
@@ -177,7 +159,7 @@ class WC_Iugu_Pix_Addons_Gateway extends WC_Iugu_Pix_Gateway {
          */
 				update_post_meta($order->get_id(), '_iugu_wc_transaction_data', $invoice_data['pix']);
 
-        update_post_meta($order->get_id(), '_transaction_id', sanitize_text_field($invoice_data['id']));
+        update_post_meta($order->get_id(), '_transaction_id', $invoice_data['id']);
 
 				$payment_response = $this->process_iugu_subscription_payment($order, $create_subscription, $order->get_total());
 
@@ -240,7 +222,7 @@ class WC_Iugu_Pix_Addons_Gateway extends WC_Iugu_Pix_Gateway {
      */
     $iugu_subscription = $this->api->get_iugu_subscription($subscription['id']);
 
-		if ($subscription['recent_invoices'][0]['status'] === 'paid') {
+		if ($iugu_subscription['recent_invoices'][0]['status'] === 'paid') {
 
 			$order->add_order_note(__('Subscription paid successfully by Iugu - PIX.', 'iugu-woocommerce'));
 
@@ -269,7 +251,7 @@ class WC_Iugu_Pix_Addons_Gateway extends WC_Iugu_Pix_Gateway {
 
       $order = new WC_Order($order_id);
 
-      $payment_response = $this->process_subscription_payment( $order, $order->get_total() );
+      $payment_response = $this->process_subscription_payment($order, $order->get_total() );
 
       if (isset($payment_response) && is_wp_error($payment_response)) {
 
@@ -372,17 +354,7 @@ class WC_Iugu_Pix_Addons_Gateway extends WC_Iugu_Pix_Gateway {
 
     if ($maybe_iugu_handle_subscriptions === 'yes') {
 
-      /**
-       * Get subscription data.
-       */
-
       $result = $this->process_iugu_subscription_payment($renewal_order, $amount_to_charge);
-
-      if (is_wp_error($result)) {
-
-        $renewal_order->update_status('failed', $result->get_error_message());
-
-      } // end if;
 
     } else {
 
@@ -406,77 +378,71 @@ class WC_Iugu_Pix_Addons_Gateway extends WC_Iugu_Pix_Gateway {
    *
    * @return bool
    */
-  protected function update_subscription_status( $order_id, $invoice_status ) {
-    $order          = new WC_Order( $order_id );
-    $invoice_status = strtolower( $invoice_status );
+  protected function update_subscription_status($order_id, $invoice_status) {
+
+    $order = new WC_Order($order_id);
+
+    $invoice_status = strtolower($invoice_status);
+
     $order_updated  = false;
 
-    if ( 'paid' == $invoice_status ) {
-      $order->add_order_note( __( 'iugu: Subscription paid successfully.', 'iugu-woocommerce' ) );
+    /**
+     * Paid Invoice
+     */
+    if ($invoice_status == 'paid') {
 
-      // Payment complete
+      $order->add_order_note(__('iugu: Subscription paid successfully.', 'iugu-woocommerce'));
+
+      /**
+       * Payment complete
+       */
       $order->payment_complete();
 
       $order_updated = true;
-    } elseif ( in_array( $invoice_status, array( 'canceled', 'refunded', 'expired' ) ) ) {
+
+    } // end if;
+
+    /**
+     * Refund Invoice
+     */
+    if ($invoice_status == 'canceled') {
+
+      $order->add_order_note(__('iugu: Subscription paid successfully.', 'iugu-woocommerce'));
+
+      /**
+       * Payment complete
+       */
+      $order->payment_complete();
+
+      $order_updated = true;
+
+    } // end if;
+
+    if ( in_array( $invoice_status, array('canceled', 'refunded', 'expired')) ) {
+
       $order->add_order_note( __( 'iugu: Subscription payment failed.', 'iugu-woocommerce' ) );
 
       WC_Subscriptions_Manager::process_subscription_payment_failure_on_order( $order );
+
       $order_updated = true;
+
     }
 
     // Allow custom actions when update the order status.
     do_action( 'iugu_woocommerce_update_order_status', $order, $invoice_status, $order_updated );
-  }
-
-  /**
-   * Notification handler.
-   */
-  public function notification_handler() {
-
-    @ob_clean();
-
-    if (isset($_REQUEST['event']) && isset($_REQUEST['data']['id']) && 'invoice.status_changed' == $_REQUEST['event']) {
-
-      global $wpdb;
-
-      header('HTTP/1.1 200 OK');
-
-      $invoice_id = sanitize_text_field($_REQUEST['data']['id']);
-
-      $order_id   = $wpdb->get_var($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta WHERE meta_key = '_transaction_id' AND meta_value = '%s'", $invoice_id));
-
-      $order_id   = intval($order_id);
-
-      if ($order_id) {
-
-        $invoice_status = $this->api->get_invoice_status( $invoice_id );
-
-        if ( $invoice_status ) {
-
-          if ( $this->api->order_contains_subscription( $order_id ) ) {
-
-            $this->update_subscription_status( $order_id, $invoice_status );
-
-            exit();
-
-          } else {
-
-            $this->api->update_order_status( $order_id, $invoice_status );
-
-            exit();
-
-          }
-
-        }
-
-      }
-
-    } // end notification_handler;
-
-    wp_die( __( 'The request failed!', 'iugu-woocommerce' ), __( 'The request failed!', 'iugu-woocommerce' ), array( 'response' => 200 ) );
 
   }
+
+	/**
+	 * Handles API notifications.
+	 *
+	 * @return void
+	 */
+	public function notification_handler() {
+
+		$this->api->notification_handler();
+
+	} // end notification_handler;
 
   /**
 	 * Update the customer_id for a subscription
@@ -490,5 +456,66 @@ class WC_Iugu_Pix_Addons_Gateway extends WC_Iugu_Pix_Gateway {
 		//update_post_meta($subscription->get_id(), '_iugu_customer_payment_method_id', get_post_meta($renewal_order->id, '_iugu_customer_payment_method_id', true));
 
 	} // end update_failing_payment_method;
+
+  /**
+	 * Activates a iugu subscription.
+	 *
+	 * @since 2.20
+	 *
+	 * @param object $wcs_subscription WooCommerce Subscription object.
+	 * @return void.
+	 */
+	public function iugu_subscription_activate($wcs_subscription) {
+
+		$iugu_subscription_id = get_post_meta($wcs_subscription->get_id(), '_wcs_iugu_subscription_id', true);
+
+		if ($iugu_subscription_id){
+
+			$this->api->unsuspend_iugu_subscription($iugu_subscription_id);
+
+		} // end if;
+
+	} // end iugu_subscription_activate;
+
+
+  /**
+	 * Set the status of a iugu subscription to 'suspended'
+	 *
+	 * @since 2.20
+	 *
+	 * @param object $wcs_subscription WooCommerce Subscription object.
+	 * @return void.
+	 */
+	public function iugu_subscription_on_hold($wcs_subscription) {
+
+		$iugu_subscription_id = get_post_meta($wcs_subscription->get_id(), '_wcs_iugu_subscription_id', true);
+
+		if ($iugu_subscription_id) {
+
+			$this->api->suspend_iugu_subscription($iugu_subscription_id);
+
+		} // end if;
+
+	} // end iugu_subscription_on_hold;
+
+  /**
+	 * Deletes a iugu subscription
+	 *
+	 * @since 2.20
+	 *
+	 * @param object $wcs_subscription WooCommerce Subscription object.
+	 * @return void.
+	 */
+	public function iugu_subscription_cancelled($wcs_subscription) {
+
+		$iugu_subscription_id = get_post_meta($wcs_subscription->get_id(), '_wcs_iugu_subscription_id');
+
+		if ($iugu_subscription_id) {
+
+			$this->api->delete_iugu_subscription($iugu_subscription_id[0]);
+
+		} // end if;
+
+	} // end iugu_subscription_cancelled;
 
 } // end WC_Iugu_Pix_Addons_Gateway;

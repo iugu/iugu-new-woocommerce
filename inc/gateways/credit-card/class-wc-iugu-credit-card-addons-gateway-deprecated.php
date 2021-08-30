@@ -362,7 +362,9 @@ class WC_Iugu_Credit_Card_Addons_Gateway_Deprecated extends WC_Iugu_Credit_Card_
 	 * Notification handler.
 	 */
 	public function notification_handler() {
+
 		$this->api->notification_handler();
+
 	}
 
 	/**

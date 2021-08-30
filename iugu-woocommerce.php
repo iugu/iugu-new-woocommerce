@@ -6,6 +6,8 @@
  * Author: iugu
  * Author URI: https://iugu.com/
  * Version: 2.2
+ * Requires at least: 5.6
+ * Requires PHP: 7.0
  * License: GPLv2 or later
  * Text Domain: iugu-woocommerce
  * Domain Path: lang/

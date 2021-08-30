@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: WooCommerce iugu\n"
-"POT-Creation-Date: 2021-08-01 23:53-0300\n"
-"PO-Revision-Date: 2021-08-01 23:53-0300\n"
+"POT-Creation-Date: 2021-08-22 20:21-0300\n"
+"PO-Revision-Date: 2021-08-22 20:21-0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -21,229 +21,259 @@ msgstr ""
 "X-Poedit-SearchPath-0: .\n"
 "X-Poedit-SearchPathExcluded-0: *.min.js\n"
 
-#: inc/class-wc-iugu-api.php:859
+#: inc/class-wc-iugu-api.php:890
 #, php-format
 msgid "Order %s"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:963
+#: inc/class-wc-iugu-api.php:994
 #, php-format
 msgid "Shipping via %s"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:1261
+#: inc/class-wc-iugu-api.php:1313
 msgid ""
 "An error has occurred while processing your payment. Please, try again or "
 "contact us for assistance."
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:1582
+#: inc/class-wc-iugu-api.php:1391 inc/class-wc-iugu-api.php:1704
+msgid "Payment method was not added. Please, try again!"
+msgstr ""
+
+#: inc/class-wc-iugu-api.php:1436
+msgid "Sign up fee"
+msgstr ""
+
+#: inc/class-wc-iugu-api.php:1668
 #, php-format
 msgid "Payment method created for order %s"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:1586
+#: inc/class-wc-iugu-api.php:1672
 msgid "Payment method created"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:1618
-msgid "Payment method was not added. Please, try again!"
-msgstr ""
-
-#: inc/class-wc-iugu-api.php:1624
+#: inc/class-wc-iugu-api.php:1710
 msgid "Payment method add successfully"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:1880
+#: inc/class-wc-iugu-api.php:1973
 #: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway-deprecated.php:165
 #: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway-deprecated.php:226
-#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:169
-#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:227
+#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:343
+#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:415
+#: inc/gateways/pix/class-wc-iugu-pix-addons-gateway.php:328
 msgid "iugu bank slip URL"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:1916
+#: inc/class-wc-iugu-api.php:2009
 #: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway-deprecated.php:170
 #: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway-deprecated.php:231
-#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:174
-#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:232
+#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:348
+#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:420
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:244
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:339
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:537
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:693
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:562
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:727
+#: inc/gateways/pix/class-wc-iugu-pix-addons-gateway.php:333
 msgid "iugu transaction details"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:1924 inc/class-wc-iugu-api.php:1993
+#: inc/class-wc-iugu-api.php:2017 inc/class-wc-iugu-api.php:2087
 #: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway-deprecated.php:173
 #: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway-deprecated.php:234
-#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:177
-#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:235
+#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:351
+#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:423
+#: inc/gateways/pix/class-wc-iugu-pix-addons-gateway.php:336
 msgid ""
 "iugu: The customer generated a bank slip. Awaiting payment confirmation."
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:1928 inc/class-wc-iugu-api.php:1997
+#: inc/class-wc-iugu-api.php:2021 inc/class-wc-iugu-api.php:2091
 msgid ""
 "iugu: The customer generated a pix payment. Awaiting payment confirmation."
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:1940
+#: inc/class-wc-iugu-api.php:2033
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:346
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:703
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:737
 msgid "iugu: Invoice paid successfully by credit card."
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:1946
+#: inc/class-wc-iugu-api.php:2039
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:343
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:699
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:733
 msgid "iugu: Credit card declined."
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2001
+#: inc/class-wc-iugu-api.php:2095
 msgid ""
 "iugu: Invoice paid by credit card. Waiting for the acquirer confirmation."
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2013
+#: inc/class-wc-iugu-api.php:2107
 msgid "iugu: Invoice paid successfully."
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2026
+#: inc/class-wc-iugu-api.php:2136
 msgid "iugu: Invoice canceled."
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2032
+#: inc/class-wc-iugu-api.php:2142
 msgid "iugu: Invoice partially paid."
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2038
+#: inc/class-wc-iugu-api.php:2148
 msgid "iugu: Invoice refunded."
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2041
+#: inc/class-wc-iugu-api.php:2151
 #, php-format
 msgid "Invoice for order %s was refunded"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2042
+#: inc/class-wc-iugu-api.php:2152
 msgid "Invoice refunded"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2043
+#: inc/class-wc-iugu-api.php:2153
 #, php-format
 msgid "Order %s has been marked as refunded by iugu."
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2050
+#: inc/class-wc-iugu-api.php:2160
 msgid "iugu: Invoice expired."
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2111
-#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway-deprecated.php:309
-#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:310
+#: inc/class-wc-iugu-api.php:2239
 msgid "The request failed!"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2136
+#: inc/class-wc-iugu-api.php:2264
 msgid "Can't do partial refunds"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2181
+#: inc/class-wc-iugu-api.php:2309
 msgid "Email address"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2183
+#: inc/class-wc-iugu-api.php:2311
 msgid "Street address"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2184
+#: inc/class-wc-iugu-api.php:2312
 msgid "Neighborhood"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2185
+#: inc/class-wc-iugu-api.php:2313
 msgid "Town / City"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2186
+#: inc/class-wc-iugu-api.php:2314
 msgid "State / County"
 msgstr ""
 
-#: inc/class-wc-iugu-api.php:2187
+#: inc/class-wc-iugu-api.php:2315
 msgid "Postcode / ZIP"
 msgstr ""
 
-#: inc/class-wc-iugu-hooks.php:92 inc/class-wc-iugu-hooks.php:126
+#: inc/class-wc-iugu-hooks.php:102 inc/class-wc-iugu-hooks.php:136
 #: views/bank-slip/emails/html-instructions.php:17
 #: views/bank-slip/payment-instructions.php:16
 #: views/pix/emails/html-instructions.php:17
 msgid "Pay the bank slip"
 msgstr ""
 
-#: inc/class-wc-iugu-hooks.php:148
+#: inc/class-wc-iugu-hooks.php:158
 msgid "Iugu Subscriptions"
 msgstr ""
 
-#: inc/class-wc-iugu-hooks.php:153
+#: inc/class-wc-iugu-hooks.php:163
 msgid "Enable Iugu Subscriptions"
 msgstr ""
 
-#: inc/class-wc-iugu-hooks.php:154
+#: inc/class-wc-iugu-hooks.php:164
 msgid ""
 "By activating this option, the management of subscriptions will be done by "
 "Iugu automatically. Your products will be synced as plans and subscriptions "
 "will be created in Iugu."
 msgstr ""
 
-#: inc/class-wc-iugu-hooks.php:296
+#: inc/class-wc-iugu-hooks.php:310
 msgid "Avaiable Iugu Payments"
 msgstr ""
 
-#: inc/class-wc-iugu-hooks.php:298
+#: inc/class-wc-iugu-hooks.php:312
 msgid "All"
 msgstr ""
 
-#: inc/class-wc-iugu-hooks.php:299
+#: inc/class-wc-iugu-hooks.php:313
 msgid "Bank Slip"
 msgstr ""
 
-#: inc/class-wc-iugu-hooks.php:300
+#: inc/class-wc-iugu-hooks.php:314
 msgid "Credit Card"
 msgstr ""
 
-#: inc/class-wc-iugu-hooks.php:301
+#: inc/class-wc-iugu-hooks.php:315
 #: inc/gateways/pix/class-wc-iugu-pix-gateway.php:143
 msgid "PIX"
 msgstr ""
 
-#: inc/class-wc-iugu-hooks.php:343
+#: inc/class-wc-iugu-hooks.php:361 inc/class-wc-iugu-hooks.php:363
 msgid "Iugu Gateway"
 msgstr ""
 
-#: inc/class-wc-iugu-hooks.php:374
+#: inc/class-wc-iugu-hooks.php:386
+msgid "Plan ID"
+msgstr ""
+
+#: inc/class-wc-iugu-hooks.php:396
 msgid "No plan for this product"
 msgstr ""
 
-#: inc/class-wc-iugu-hooks.php:475
+#: inc/class-wc-iugu-hooks.php:423
+msgid "Subscription ID"
+msgstr ""
+
+#: inc/class-wc-iugu-hooks.php:433
+msgid "No subscription for this product"
+msgstr ""
+
+#: inc/class-wc-iugu-hooks.php:533
 msgid "Bank Slip discount"
 msgstr ""
 
 #: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway-deprecated.php:236
-#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:237
+#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:425
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:349
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:709
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:743
 #, php-format
 msgid "iugu: Pre-order payment failed (%s)."
 msgstr ""
 
 #: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway-deprecated.php:262
-#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:263
+#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:451
+#: inc/gateways/pix/class-wc-iugu-pix-addons-gateway.php:395
+#: inc/gateways/pix/class-wc-iugu-pix-addons-gateway.php:411
 msgid "iugu: Subscription paid successfully."
 msgstr ""
 
 #: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway-deprecated.php:269
-#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:270
+#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:458
+#: inc/gateways/pix/class-wc-iugu-pix-addons-gateway.php:424
 msgid "iugu: Subscription payment failed."
+msgstr ""
+
+#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:294
+#: inc/gateways/pix/class-wc-iugu-pix-addons-gateway.php:228
+msgid "Subscription paid successfully by Iugu - PIX."
+msgstr ""
+
+#: inc/gateways/bank-slip/class-wc-iugu-bank-slip-addons-gateway.php:300
+#: inc/gateways/pix/class-wc-iugu-pix-addons-gateway.php:234
+msgid "Iugu Subscription waiting payment."
 msgstr ""
 
 #: inc/gateways/bank-slip/class-wc-iugu-bank-slip-gateway.php:29
@@ -483,8 +513,8 @@ msgstr ""
 
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:62
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:127
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:105
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:364
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:156
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:433
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-gateway.php:387
 msgid ""
 "Please, make sure your credit card details have been entered correctly and "
@@ -493,7 +523,7 @@ msgstr ""
 
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:74
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:139
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:376
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:445
 msgid ""
 "An error occurred while trying to save your data. Please, contact us to get "
 "help."
@@ -501,21 +531,21 @@ msgstr ""
 
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:229
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:324
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:516
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:672
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:541
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:706
 msgid "Customer payment method not found!"
 msgstr ""
 
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:248
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:274
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:543
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:797
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:343
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:568
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:830
 msgid "iugu: Subscription paid successfully by credit card."
 msgstr ""
 
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway-deprecated.php:253
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:282
-#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:551
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:351
+#: inc/gateways/credit-card/class-wc-iugu-credit-card-addons-gateway.php:576
 msgid "iugu: Subscription payment failed. Credit card declined."
 msgstr ""
 
@@ -573,12 +603,12 @@ msgid "Enter the transaction rate set up in your iugu plan."
 msgstr ""
 
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-gateway.php:258
-#: views/credit-card/payment-form.php:49
+#: views/credit-card/payment-form.php:47
 msgid "Card number"
 msgstr ""
 
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-gateway.php:259
-#: views/credit-card/payment-form.php:62
+#: views/credit-card/payment-form.php:60
 msgid "Security code"
 msgstr ""
 
@@ -595,7 +625,7 @@ msgid "Last name"
 msgstr ""
 
 #: inc/gateways/credit-card/class-wc-iugu-credit-card-gateway.php:263
-#: views/credit-card/payment-form.php:83
+#: views/credit-card/payment-form.php:81
 msgid "Installments"
 msgstr ""
 
@@ -627,19 +657,19 @@ msgstr ""
 msgid "Pay with PIX."
 msgstr ""
 
-#: iugu-woocommerce.php:253
+#: iugu-woocommerce.php:257
 msgid "System status &gt; logs"
 msgstr ""
 
-#: iugu-woocommerce.php:309
+#: iugu-woocommerce.php:313
 msgid "Credit card settings"
 msgstr ""
 
-#: iugu-woocommerce.php:311
+#: iugu-woocommerce.php:315
 msgid "Bank slip settings"
 msgstr ""
 
-#: iugu-woocommerce.php:313
+#: iugu-woocommerce.php:317
 msgid "PIX settings"
 msgstr ""
 
@@ -736,43 +766,43 @@ msgstr ""
 msgid "Payment successfully made using credit card in %s."
 msgstr ""
 
-#: views/credit-card/payment-form.php:38
+#: views/credit-card/payment-form.php:36
 msgid "New credit card"
 msgstr ""
 
-#: views/credit-card/payment-form.php:53
+#: views/credit-card/payment-form.php:51
 msgid "Name printed on card"
 msgstr ""
 
-#: views/credit-card/payment-form.php:58
+#: views/credit-card/payment-form.php:56
 msgid "Expiry date (MM/YYYY)"
 msgstr ""
 
-#: views/credit-card/payment-form.php:59
+#: views/credit-card/payment-form.php:57
 msgid "MM / YYYY"
 msgstr ""
 
-#: views/credit-card/payment-form.php:63
+#: views/credit-card/payment-form.php:61
 msgid "CVC"
 msgstr ""
 
-#: views/credit-card/payment-form.php:71
+#: views/credit-card/payment-form.php:69
 msgid "Save this credit card"
 msgstr ""
 
-#: views/credit-card/payment-form.php:87
+#: views/credit-card/payment-form.php:85
 msgid "Select"
 msgstr ""
 
-#: views/credit-card/payment-form.php:95
+#: views/credit-card/payment-form.php:93
 msgid "free interest"
 msgstr ""
 
-#: views/credit-card/payment-form.php:108
+#: views/credit-card/payment-form.php:106
 msgid "with interest"
 msgstr ""
 
-#: views/credit-card/payment-form.php:123
+#: views/credit-card/payment-form.php:121
 #, php-format
 msgid "%dx of %s %s (Total: %s)"
 msgstr ""

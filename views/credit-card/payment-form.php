@@ -74,7 +74,7 @@ if (!defined( 'ABSPATH')) {
 
 	</div>
 
-	<? if (isset($installments) && $installments > 0) { ?>
+	<?php if (isset($installments) && $installments > 0) { ?>
 
 	<p class="form-row form-row-wide">
 
@@ -126,11 +126,11 @@ if (!defined( 'ABSPATH')) {
 
 	</p>
 
-	<? } else { ?>
+	<?php } else { ?>
 
 		<input type="hidden" value="1" id="iugu-card-installments" name="iugu_card_installments">
 
-	<? } ?>
+	<?php } ?>
 
 	<div class="clear"></div>
 
