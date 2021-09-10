@@ -232,7 +232,8 @@ class WC_Iugu_Bank_Slip_Gateway extends WC_Payment_Gateway {
 				'description' => sprintf( __( 'Log iugu events, such as API requests, for debugging purposes. The log can be found in %s.', 'iugu-woocommerce' ), WC_Iugu::get_log_view( $this->id ) )
 			)
 		);
-	}
+
+	} // end init_form_fields;
 
 	/**
 	 * Payment fields.

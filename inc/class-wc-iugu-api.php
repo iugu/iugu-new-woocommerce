@@ -1351,7 +1351,7 @@ class WC_Iugu_API {
     } // end if;
 
     $create_subscription = array(
-       "plan_identifier"        => $plan['identifier'],
+      "plan_identifier"        => $plan['identifier'],
       "customer_id"            => $customer_id,
       "expires_at"             => $expires_at,
       "only_on_charge_success" => $only_on_charge_success,
@@ -1373,18 +1373,6 @@ class WC_Iugu_API {
     $response = $this->do_request('subscriptions', 'POST', $subscription_data);
 
     $body = json_decode($response['body'], true);
-
-    if ('yes' == $this->gateway->debug && isset($payment_method['id'])) {
-
-      $this->gateway->log->add($this->gateway->id, 'Customer payment method created successfully!');
-
-    } // end if;
-
-    if (isset($body['errors']) && $body['errors']) {
-
-      wc_add_notice(__('Payment method was not added. Please, try again!', 'iugu-woocommerce'), 'error' );
-
-    } // end if;
 
     return $body;
 
@@ -1442,6 +1430,37 @@ class WC_Iugu_API {
       } // end if;
 
     } // end foreach;
+
+    foreach($order->get_items('fee') as $item_id => $item_fee) {
+
+      $fee_name = $item_fee->get_name();
+
+      $fee_total = $this->get_cents($item_fee->get_total());
+
+      $item = array(
+        "description" => $fee_name,
+        "price_cents" => -1 * abs($fee_total),
+        "quantity"    => 1,
+        "recurrent"   => "false"
+      );
+
+      $maybe_iugu_handle_subscriptions = get_option('enable_iugu_handle_subscriptions');
+
+      $iugu_subscription_discount_type = get_option('iugu_subscription_discount_type');
+
+      if ($maybe_iugu_handle_subscriptions === 'yes') {
+
+        if ($iugu_subscription_discount_type === 'persistent') {
+
+          $item['recurrent'] = true;
+
+        } // end
+
+      } // end if;
+
+      array_push($create_subscription['subitems'], $item);
+
+    } // foreach;
 
     return $create_subscription;
 
@@ -1539,27 +1558,17 @@ class WC_Iugu_API {
 
     $customer_id = get_user_meta($order->get_user_id(), '_iugu_customer_id', true);
 
-    $data = $this->build_api_params(array('default_payment_method_id' => $payment_id));
+    $data = $this->build_api_params(
+      array(
+        'default_payment_method_id' => $payment_id
+      )
+    );
 
-    $response = $this->do_request('customers/'.$customer_id, 'PUT', $data);
+    $response = $this->do_request('customers/' . $customer_id, 'PUT', $data);
 
-    if (is_object($response) && is_wp_error($response)) {
+    $body = json_decode($response['body'], true);
 
-      if ('yes' == $this->gateway->debug) {
-
-        $this->gateway->log->add($this->gateway->id, 'WP_Error while trying to set default payment method: ' . $response->get_error_message());
-
-      } // end if;
-
-    } elseif (isset($response['body']) && !empty($response['body'])) {
-
-      if ('yes' == $this->gateway->debug && isset($customer['id'])) {
-
-        $this->gateway->log->add($this->gateway->id, 'Default payment method set successfully!');
-
-      } // end if;
-
-    } // end if;
+    return $body;
 
   } // end set_default_payment_method;
 
@@ -1683,39 +1692,13 @@ class WC_Iugu_API {
 
     $response = $this->do_request('customers/' . $customer_id . '/payment_methods', 'POST', $payment_data);
 
-    if (isset($response['body']) && !empty($response['body'])) {
+    $body = json_decode($response['body'], true);
 
-      $body = json_decode($response['body'], true);
+    if (isset($body)) {
 
-      if ('yes' == $this->gateway->debug && isset($payment_method['id'])) {
-
-        $this->gateway->log->add($this->gateway->id, 'Customer payment method created successfully!');
-
-      } // end if;
-
-      if (isset($body['errors']) && $body['errors']) {
-
-        wc_add_notice(__('Payment method was not added. Please, try again!', 'iugu-woocommerce'), 'error' );
-
-        return $body;
-
-      } // end if;
-
-      wc_add_notice(__('Payment method add successfully', 'iugu-woocommerce'), 'success' );
-
-      $this->set_wc_payment_method($body);
-
-      return $body['id'];
+      return $body;
 
     } // end if;
-
-    if ('yes' == $this->gateway->debug && $order) {
-
-      $this->gateway->log->add($this->gateway->id, 'Error while creating the customer payment method for order ' . $order->get_order_number() . ': ' . print_r($response, true));
-
-    } // end if;
-
-    return '';
 
   } // end create_customer_payment_method;
 
@@ -1882,6 +1865,18 @@ class WC_Iugu_API {
     $endpoint = 'plans/' . $plan_id . '/';
 
     $iugu_options = get_option('woocommerce_iugu-bank-slip_settings');
+
+    if (!$iugu_options) {
+
+      $iugu_options = get_option('woocommerce_iugu-credit-card_settings');
+
+    } // end if
+
+    if (!$iugu_options) {
+
+      $iugu_options = get_option('woocommerce_iugu-pix_settings');
+
+    } // end if
 
     if (is_array($iugu_options) && isset($iugu_options['api_token'])) {
 

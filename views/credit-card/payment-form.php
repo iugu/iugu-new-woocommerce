@@ -43,22 +43,51 @@ if (!defined( 'ABSPATH')) {
 
 	<div id="new-credit-card" <?php if (isset($payment_methods) && $payment_methods) { echo 'style="display:none;"'; } else { echo ''; }?>>
 
-		<p class="form-row form-row-first">
-			<label for="iugu-card-number"><?php _e( 'Card number', 'iugu-woocommerce' ); ?> <span class="required">*</span></label>
-			<input id="iugu-card-number" class="input-text wc-credit-card-form-card-number" type="text" maxlength="20" autocomplete="off" placeholder="&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull;" style="font-size: 1.5em; padding: 8px;" data-iugu="number" />
+		<p class="form-row">
+
+			<label for="iugu-card-number">
+
+				<?php _e('Card number', 'iugu-woocommerce'); ?>
+				<span class="required">*</span>
+
+			</label>
+
+			<input id="iugu-card-number" class="input-text wc-credit-card-form-card-number" type="text" maxlength="20" autocomplete="off" placeholder="&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull;" data-iugu="number" />
+
 		</p>
-		<p class="form-row form-row-last">
-			<label for="iugu-card-holder-name"><?php _e( 'Name printed on card', 'iugu-woocommerce' ); ?> <span class="required">*</span></label>
-			<input id="iugu-card-holder-name" name="iugu_card_holder_name" class="input-text" type="text" autocomplete="off" style="font-size: 1.5em; padding: 8px;" data-iugu="full_name" />
+
+		<p class="form-row">
+
+			<label for="iugu-card-holder-name">
+
+				<?php _e('Name printed on card', 'iugu-woocommerce'); ?>
+				<span class="required">*</span>
+
+			</label>
+
+			<input id="iugu-card-holder-name" name="iugu_card_holder_name" class="input-text" type="text" autocomplete="off" data-iugu="full_name" />
+
 		</p>
+
 		<div class="clear"></div>
+
 		<p class="form-row form-row-first">
-			<label for="iugu-card-expiry"><?php _e( 'Expiry date (MM/YYYY)', 'iugu-woocommerce' ); ?> <span class="required">*</span></label>
-			<input id="iugu-card-expiry" class="input-text wc-credit-card-form-card-expiry" type="text" autocomplete="off" placeholder="<?php _e( 'MM / YYYY', 'iugu-woocommerce' ); ?>" style="font-size: 1.5em; padding: 8px;" data-iugu="expiration" />
+
+			<label for="iugu-card-expiry">
+
+				<?php _e('Expiry date', 'iugu-woocommerce'); ?>
+				<span class="required">*</span>
+
+			</label>
+
+			<input id="iugu-card-expiry" class="input-text wc-credit-card-form-card-expiry" type="text" autocomplete="off" placeholder="<?php _e( 'MM / YYYY', 'iugu-woocommerce' ); ?>"  data-iugu="expiration" />
+
 		</p>
+
 		<p class="form-row form-row-last">
+
 			<label for="iugu-card-cvc"><?php _e( 'Security code', 'iugu-woocommerce' ); ?> <span class="required">*</span></label>
-			<input id="iugu-card-cvc" class="input-text wc-credit-card-form-card-cvc" type="text" autocomplete="off" placeholder="<?php _e( 'CVC', 'iugu-woocommerce' ); ?>" style="font-size: 1.5em; padding: 8px;" data-iugu="verification_value" />
+			<input id="iugu-card-cvc" class="input-text wc-credit-card-form-card-cvc" type="text" autocomplete="off" placeholder="<?php _e( 'CVC', 'iugu-woocommerce' ); ?>" data-iugu="verification_value" />
 		</p>
 		<div class="clear"></div>
 

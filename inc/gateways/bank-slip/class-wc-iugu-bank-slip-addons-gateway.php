@@ -264,7 +264,7 @@ class WC_Iugu_Bank_Slip_Addons_Gateway extends WC_Iugu_Bank_Slip_Gateway {
 
 			} else {
 
-				throw new Exception($create_subscription['error']);
+				throw new Exception($create_subscription['errors']);
 
 			} // end if;
 

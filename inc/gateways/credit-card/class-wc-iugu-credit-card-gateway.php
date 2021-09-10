@@ -362,7 +362,7 @@ class WC_Iugu_Credit_Card_Gateway extends WC_Payment_Gateway {
 		/**
 		 * Tratamento do salvamento do cartão.
 		 */
-		if(isset($_POST['iugu_token']) && isset( $_POST['iugu_save_card']) && $_POST['iugu_save_card'] == 'on') {
+		if(isset($_POST['iugu_token']) && isset($_POST['iugu_save_card']) && $_POST['iugu_save_card'] == 'on') {
 
 		/**
 		 * Temos token, e o usuário quer salvar o cartão. Então vamos salvar e colocar seu ID em $_POST, e remover o token, pois ele não pode ser reutilizado.

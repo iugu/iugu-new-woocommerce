@@ -60,7 +60,6 @@ class WC_Iugu_Hooks {
 
 			add_action('woocommerce_update_product', array($this, 'create_new_iugu_plan'), 99, 1);
 
-
 			/**
 			 * When the product-subscription is update
 			 */
@@ -81,6 +80,8 @@ class WC_Iugu_Hooks {
 		add_action('woocommerce_payment_token_deleted', array($this, 'remove_payment_method'), 10, 2);
 
 		add_action('woocommerce_before_calculate_totals', array($this, 'add_amount_to_order'), 10, 1);
+
+    add_filter('woocommerce_subscriptions_is_recurring_fee', array($this, 'add_amount_to_subscription_order'), 1500, 3);
 
 	} // end __construct;
 
@@ -171,6 +172,18 @@ class WC_Iugu_Hooks {
 					'desc_tip' => false,
 				),
 				array(
+					'name'     	=> __('Bank Slip discount type', 'iugu-woocommerce'),
+					'desc'     	=> __('The subscription using the bank slip has what kind of discount. Persistent, ie every month has the same discount, or only on the first payment?', 'iugu-woocommerce'),
+					'id'       	=> 'iugu_subscription_discount_type',
+					'default'  	=> 'persistent',
+					'type'     	=> 'select',
+					'options'   => array(
+            'persistent'  => __('Persistent', 'iugu-woocommerce'),
+            'one_time'    => __('One Time', 'iugu-woocommerce')
+          ),
+					'desc_tip'  => false,
+				),
+				array(
 					'type' => 'sectionend',
 					'id'   => 'iugu_handle_subscriptions',
 				),
@@ -241,7 +254,7 @@ class WC_Iugu_Hooks {
 
         $plan_params = array(
           "name"          => $product->get_name(),
-          "interval"      => isset($_subscription_period_interval) ? $_subscription_period : 1,
+          "interval"      => isset($_subscription_period_interval) ? $_subscription_period_interval : 1,
           "interval_type" => isset($_subscription_period) ? $_subscription_period : 'months',
           "value_cents"   => $this->api->get_cents($subscription_price),
           "payable_with"  => isset($product_data['_iugu_payable_with'][0]) ? $product_data['_iugu_payable_with'][0] : 'all',
@@ -511,7 +524,6 @@ class WC_Iugu_Hooks {
 	 */
 	public function add_amount_to_order($cart) {
 
-
 		if (WC()->session->chosen_payment_method === 'iugu-bank-slip') {
 
 			$iugu_options = get_option('woocommerce_iugu-bank-slip_settings');
@@ -520,13 +532,17 @@ class WC_Iugu_Hooks {
 
 				$type = $iugu_options['discount_type'];
 
-				$subtotal = $cart->get_subtotal();
-
 				$discount_value = $iugu_options['discount_value'];
 
 				if ($type == 'percentage') {
 
-					$value = ($subtotal / 100) * ($discount_value);
+					foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
+
+						$subtotal = $cart_item['line_total'];
+
+					} // end foreach;
+
+					$value = ($subtotal / 100) * $discount_value;
 
 				} else {
 
@@ -547,6 +563,30 @@ class WC_Iugu_Hooks {
 		} // end if;
 
 	} // end add_amount_to_order;
+
+  public function add_amount_to_subscription_order($false = false, $fee, $cart) {
+
+    $maybe_iugu_handle_subscriptions = get_option('enable_iugu_handle_subscriptions');
+
+    $iugu_subscription_discount_type = get_option('iugu_subscription_discount_type');
+
+    if ($maybe_iugu_handle_subscriptions === 'yes') {
+
+      if ($iugu_subscription_discount_type !== 'persistent') {
+
+        $cart->fees_api()->remove_all_fees();
+
+        $value = 0;
+
+        $cart->add_fee(__('Bank Slip discount', 'iugu-woocommerce'), -$value);
+
+      } // end if;
+
+    } // end if;
+
+    return false;
+
+  } // end add_amount_to_subscription_order;
 
 	/**
 	 * Create iugu webhook for subscriptions that are handled by Iugu.

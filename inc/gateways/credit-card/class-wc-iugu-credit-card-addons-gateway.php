@@ -128,7 +128,7 @@ class WC_Iugu_Credit_Card_Addons_Gateway extends WC_Iugu_Credit_Card_Gateway {
 			/**
 			 * Tratamento do salvamento do cartão.
 			 */
-			if (isset( $_POST['iugu_token']) && isset( $_POST['iugu_save_card']) && $_POST['iugu_save_card'] == 'on') {
+			if (isset( $_POST['iugu_token']) && isset($_POST['iugu_save_card']) && $_POST['iugu_save_card'] == 'on') {
 
 				/**
 				 * Temos token, e o usuário quer salvar o cartão. Então vamos salvar e colocar seu ID em $_POST,
@@ -227,28 +227,46 @@ class WC_Iugu_Credit_Card_Addons_Gateway extends WC_Iugu_Credit_Card_Gateway {
 
 			$customer_id = $this->api->get_customer_id($order);
 
+			if (!$customer_id) {
+
+				throw new Exception(__('Customer not found.', 'iugu-woocommerce'));
+
+			} // end if;
+
+			$plan_id	= $this->api->get_product_plan_id($order_id);
+
+			if (!$plan_id) {
+
+				throw new Exception(__('Plan not found.', 'iugu-woocommerce'));
+
+			} // end if;
+
+			$plan	= $this->api->get_iugu_plan($plan_id);
+
 			/**
 			 * Get the payment method
 			 */
 			if (isset($_POST['iugu_token'])) {
 
-				$payment_method_id = $this->api->create_customer_payment_method($order, $_POST['iugu_token']);
+				$iugu_payment_method = $this->api->create_customer_payment_method($order, $_POST['iugu_token']);
+
+				if (!isset($iugu_payment_method['id'])) {
+
+					throw new Exception($iugu_payment_method['errors']);
+
+				} // end if;
+
+				$payment_method_id = $iugu_payment_method['id'];
 
 			}	else if (isset($_POST['customer_payment_method_id'])) {
 
-				$payment_method_id = $_POST['customer_payment_method_id'];
+				$token = new WC_Payment_Token_CC($_POST['customer_payment_method_id']);
+
+				$payment_method_id = $token->get_token();
 
 			} // end if;
 
 			$this->api->set_default_payment_method($order, $payment_method_id);
-
-			$plan_id	= $this->api->get_product_plan_id($order_id);
-
-			if ($plan_id) {
-
-				$plan	= $this->api->get_iugu_plan($plan_id);
-
-			} // end if;
 
 			$create_subscription = $this->api->create_iugu_subscription($order, $plan, $customer_id);
 
@@ -276,6 +294,12 @@ class WC_Iugu_Credit_Card_Addons_Gateway extends WC_Iugu_Credit_Card_Gateway {
 
 				$payment_response = $this->process_iugu_subscription_payment($order, $create_subscription, $order->get_total());
 
+				if (isset($_POST['iugu_token'])) {
+
+					$set_wc_payment_method = $this->api->set_wc_payment_method($iugu_payment_method);
+
+				} // end if;
+
 				if ($payment_response) {
 
 					/**
@@ -290,7 +314,7 @@ class WC_Iugu_Credit_Card_Addons_Gateway extends WC_Iugu_Credit_Card_Gateway {
 
 			} else {
 
-				throw new Exception($create_subscription['error']);
+				throw new Exception($create_subscription['errors']);
 
 			} // end if;
 
@@ -809,7 +833,7 @@ class WC_Iugu_Credit_Card_Addons_Gateway extends WC_Iugu_Credit_Card_Gateway {
 
 		if (!$_iugu_subscription_id) {
 
-			$this->scheduled_subscription_payment($amount_to_charge, $renewal_order);
+			//$this->scheduled_subscription_payment($amount_to_charge, $renewal_order);
 
 			return true;
 
